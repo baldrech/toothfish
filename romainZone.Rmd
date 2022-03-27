@@ -264,7 +264,7 @@ Oviparous. Distinct pairing with embrace. Young may tend to follow large objects
 
 Extracting data from Kieran csv
 
-```{r}
+```{r, eval = F}
 
 SpIdx <- colnames(rsts_trends)[-(1:2)]
 SpIdx <- gsub(pattern = '\\.',replacement =  " ",x =  SpIdx)
@@ -280,24 +280,68 @@ for(iSpecies in SpIdx)
 ```
 
 
+Data from Dale, let's take that one over fishbase
+
+```{r}
+
+sp_Dale <- readxl::read_excel("Species_parameters.xlsx")
+colnames(sp_Dale) <- sp_Dale[1,]
+colnames(sp_Dale)[1] <- "Species"
+sp_Dale <- sp_Dale[-1,]
+sp_Dale$Linf <- as.numeric(sp_Dale$Linf)*.1
+sp_Dale$K <- as.numeric(sp_Dale$K)
+sp_Dale$t0 <- as.numeric(sp_Dale$t0)
+sp_Dale$a <- as.numeric(sp_Dale$a)
+sp_Dale$b <- as.numeric(sp_Dale$b)
+sp_Dale$L50 <- as.numeric(sp_Dale$L50) *.1
+# Extracting l50 from age of toothfish
+sp_Dale$L50[1] <- sp_Dale$Linf[1] *(1-exp(-sp_Dale$K[1]*(sp_Dale$L50[1]*10)))
+sp_Dale <- sp_Dale[-c(8:10)]
+
+
+```
 
 
 
 
 ```{r, eval = F}
 
-species_df <- data.frame("species" = colnames(rsts_trends)[-(1:2)],
-                         "l_inf" = c(215, 66, 60, 55, 93, 100, 120, 35, 60),
-                         "l_mat" = c(49, 26, NA, 27.3, 52, NA, NA, NA, NA),
-                         "a" = c(0.00631, 0.00120, 0.00129, 0.00468, 0.00209,
-                                 0.00513, 0.00513, 0.00603, 0.00513),
-                         "b" = c(3.15, 3.47, 3.46, 3.24, 3.19, 3.12, 3.12, 3.25, 3.12),
-                         "k_vb" = c(0.05, 0.16, rep(.3,7)),
-                         "beta" = c(100,200, rep(NA,7)),
-                         "sigma" = c(2,2, rep(NA,7)))
+# species_df <- data.frame("species" = colnames(rsts_trends)[-(1:2)],
+#                          "l_inf" = c(215, 66, 60, 55, 93, 100, 120, 35, 60),
+#                          "l_mat" = c(49, 26, NA, 27.3, 52, NA, NA, NA, NA),
+#                          "a" = c(0.00631, 0.00120, 0.00129, 0.00468, 0.00209,
+#                                  0.00513, 0.00513, 0.00603, 0.00513),
+#                          "b" = c(3.15, 3.47, 3.46, 3.24, 3.19, 3.12, 3.12, 3.25, 3.12),
+#                          "k_vb" = c(0.05, 0.16, rep(.3,7)),
+#                          "beta" = c(100,200, rep(NA,7)),
+#                          "sigma" = c(2,2, rep(NA,7)))
+
+# Species name in full
+sp_names <- colnames((rsts_trends)[-(1:2)])
+sp_names <- append(sp_names,"Macrourus.sp2", after = 5)
+sp_names[5] <- "Macrourus.caml"
+
+sp_names_idx <- c("D.ele", "C.gun", "C.rhi", "L.squ","M.cam","M.sp2","B.eat","B.irr","G.acu","B.mur")
+
+#Using Dale's data in this, not skates yet
+species_df <- data.frame("species" = sp_names_idx,
+                         "l_inf" = sp_Dale$Linf,
+                         "l_mat" = sp_Dale$L50,
+                         "a" = sp_Dale$a,
+                         "b" = sp_Dale$b,
+                         "k_vb" = sp_Dale$K,
+                         "beta" = c(100,200, rep(NA,8)),
+                         "sigma" = c(2,2, rep(NA,8)))
+
+#C.gun mat length is missing, using value from Kieran
+species_df$l_mat[2] <- 26
 
 species_df$w_inf <- species_df$a * species_df$l_inf^species_df$b
 species_df$w_mat <- species_df$a * species_df$l_mat^species_df$b
+
+# empirical data only has one Macrourus so keeping first one only
+species_df <- species_df[-6,]
+
 
 # first calibration with average biomass of last 5 years
 
